@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claude Code = מערכת הפעלה | AVIZ</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;700;900&family=JetBrains+Mono:wght@400;700&display=swap');
+
+        :root {
+            --bg: #0a0a0f;
+            --surface: #12121a;
+            --border: #1e1e2e;
+            --accent: #c084fc;
+            --accent2: #22d3ee;
+            --accent3: #f472b6;
+            --text: #e2e8f0;
+            --text-muted: #64748b;
+            --glow: rgba(192, 132, 252, 0.3);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Heebo', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            overflow-x: hidden;
+            line-height: 1.7;
+        }
+
+        /* Animated grid background */
+        .grid-bg {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-image:
+                linear-gradient(rgba(192, 132, 252, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(192, 132, 252, 0.03) 1px, transparent 1px);
+            background-size: 60px 60px;
+            z-index: 0;
+            animation: gridMove 20s linear infinite;
+        }
+        @keyframes gridMove {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(60px, 60px); }
+        }
+
+        /* Floating orbs */
+        .orb {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.15;
+            z-index: 0;
+            animation: float 15s ease-in-out infinite;
+        }
+        .orb-1 { width: 400px; height: 400px; background: var(--accent); top: 10%; right: 10%; }
+        .orb-2 { width: 300px; height: 300px; background: var(--accent2); bottom: 20%; left: 5%; animation-delay: -5s; }
+        .orb-3 { width: 350px; height: 350px; background: var(--accent3); top: 50%; left: 40%; animation-delay: -10s; }
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            33% { transform: translate(30px, -30px) scale(1.1); }
+            66% { transform: translate(-20px, 20px) scale(0.9); }
+        }
+
+        .content { position: relative; z-index: 1; }
+
+        /* Hero */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .terminal-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 100px;
+            padding: 8px 20px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            color: var(--accent2);
+            margin-bottom: 2rem;
+            animation: fadeInUp 0.8s ease;
+        }
+        .terminal-badge::before {
+            content: '>';
+            color: var(--accent);
+            font-weight: bold;
+        }
+
+        .hero h1 {
+            font-size: clamp(3rem, 8vw, 6rem);
+            font-weight: 900;
+            line-height: 1.1;
+            margin-bottom: 1.5rem;
+            animation: fadeInUp 0.8s ease 0.2s both;
+        }
+        .hero h1 .gradient {
+            background: linear-gradient(135deg, var(--accent), var(--accent2), var(--accent3));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero p {
+            font-size: 1.3rem;
+            color: var(--text-muted);
+            max-width: 600px;
+            margin-bottom: 3rem;
+            animation: fadeInUp 0.8s ease 0.4s both;
+        }
+
+        .scroll-indicator {
+            animation: fadeInUp 0.8s ease 0.6s both, bounce 2s ease-in-out infinite 1.5s;
+            font-size: 2rem;
+            opacity: 0.4;
+        }
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(10px); }
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Sections */
+        section {
+            padding: 6rem 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .section-label {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            margin-bottom: 1rem;
+        }
+
+        .section-title {
+            font-size: clamp(2rem, 5vw, 3.5rem);
+            font-weight: 900;
+            margin-bottom: 1.5rem;
+            line-height: 1.2;
+        }
+
+        .section-desc {
+            font-size: 1.1rem;
+            color: var(--text-muted);
+            max-width: 700px;
+            margin-bottom: 3rem;
+        }
+
+        /* Philosophy cards */
+        .philosophy-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-top: 3rem;
+        }
+
+        .phil-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 2rem;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .phil-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--accent), var(--accent2));
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .phil-card:hover {
+            border-color: var(--accent);
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        }
+        .phil-card:hover::before { opacity: 1; }
+        .phil-card .icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+        .phil-card h3 {
+            font-size: 1.3rem;
+            margin-bottom: 0.8rem;
+            color: var(--text);
+        }
+        .phil-card p {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+        }
+
+        /* Use cases */
+        .usecase-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .usecase {
+            display: flex;
+            gap: 1.5rem;
+            align-items: flex-start;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 2rem;
+            transition: all 0.3s ease;
+        }
+        .usecase:hover {
+            border-color: var(--accent2);
+            box-shadow: 0 0 30px rgba(34, 211, 238, 0.1);
+        }
+        .usecase-icon {
+            font-size: 2.5rem;
+            flex-shrink: 0;
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(192, 132, 252, 0.1);
+            border-radius: 12px;
+        }
+        .usecase h3 { font-size: 1.2rem; margin-bottom: 0.5rem; }
+        .usecase p { color: var(--text-muted); font-size: 0.95rem; }
+
+        /* Terminal demo */
+        .terminal {
+            background: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 12px;
+            overflow: hidden;
+            margin: 3rem auto;
+            max-width: 800px;
+            font-family: 'JetBrains Mono', monospace;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+        }
+        .terminal-header {
+            background: #161b22;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .terminal-dot {
+            width: 12px; height: 12px;
+            border-radius: 50%;
+        }
+        .terminal-dot.red { background: #ff5f57; }
+        .terminal-dot.yellow { background: #febc2e; }
+        .terminal-dot.green { background: #28c840; }
+        .terminal-title {
+            margin-right: auto;
+            margin-left: 12px;
+            font-size: 0.8rem;
+            color: #8b949e;
+        }
+        .terminal-body {
+            padding: 1.5rem;
+            font-size: 0.85rem;
+            line-height: 1.8;
+            direction: ltr;
+            text-align: left;
+        }
+        .terminal-body .prompt {
+            color: var(--accent2);
+        }
+        .terminal-body .command {
+            color: #e6edf3;
+        }
+        .terminal-body .output {
+            color: #8b949e;
+        }
+        .terminal-body .success {
+            color: #3fb950;
+        }
+        .terminal-body .highlight {
+            color: var(--accent);
+        }
+
+        /* Typing animation */
+        .typing-line {
+            opacity: 0;
+            animation: typeIn 0.5s ease forwards;
+        }
+        .typing-line:nth-child(1) { animation-delay: 0.5s; }
+        .typing-line:nth-child(2) { animation-delay: 1.5s; }
+        .typing-line:nth-child(3) { animation-delay: 2.5s; }
+        .typing-line:nth-child(4) { animation-delay: 3.5s; }
+        .typing-line:nth-child(5) { animation-delay: 4.5s; }
+        .typing-line:nth-child(6) { animation-delay: 5.5s; }
+        .typing-line:nth-child(7) { animation-delay: 6s; }
+        .typing-line:nth-child(8) { animation-delay: 6.5s; }
+        @keyframes typeIn {
+            from { opacity: 0; transform: translateX(-10px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        /* Stats */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin: 4rem 0;
+        }
+        .stat {
+            text-align: center;
+            padding: 2rem;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+        }
+        .stat-number {
+            font-size: 3rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, var(--accent), var(--accent2));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .stat-label {
+            color: var(--text-muted);
+            margin-top: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        /* Connections diagram */
+        .connections {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 1rem;
+            margin: 3rem 0;
+        }
+        .connection-node {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 100px;
+            padding: 10px 20px;
+            font-size: 0.9rem;
+            transition: all 0.3s;
+            cursor: default;
+        }
+        .connection-node:hover {
+            border-color: var(--accent);
+            box-shadow: 0 0 20px var(--glow);
+            transform: scale(1.05);
+        }
+        .connection-node .dot {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            background: var(--accent);
+            animation: pulse 2s ease-in-out infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+        .connection-node:nth-child(even) .dot { background: var(--accent2); animation-delay: 1s; }
+        .connection-node:nth-child(3n) .dot { background: var(--accent3); animation-delay: 0.5s; }
+
+        /* Quote */
+        .quote-block {
+            position: relative;
+            padding: 3rem;
+            margin: 4rem 0;
+            background: linear-gradient(135deg, rgba(192, 132, 252, 0.05), rgba(34, 211, 238, 0.05));
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            text-align: center;
+        }
+        .quote-block::before {
+            content: '"';
+            position: absolute;
+            top: -20px;
+            right: 30px;
+            font-size: 6rem;
+            font-weight: 900;
+            color: var(--accent);
+            opacity: 0.2;
+            line-height: 1;
+        }
+        .quote-text {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+        .quote-author {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+        }
+
+        /* CTA */
+        .cta-section {
+            text-align: center;
+            padding: 6rem 2rem;
+        }
+        .cta-section h2 {
+            font-size: clamp(2rem, 5vw, 3rem);
+            font-weight: 900;
+            margin-bottom: 1rem;
+        }
+        .cta-section p {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+            margin-bottom: 2rem;
+        }
+        .cta-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: linear-gradient(135deg, var(--accent), #a855f7);
+            color: white;
+            text-decoration: none;
+            padding: 16px 36px;
+            border-radius: 100px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            font-family: 'Heebo', sans-serif;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 10px 30px rgba(168, 85, 247, 0.3);
+        }
+        .cta-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 40px rgba(168, 85, 247, 0.4);
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 3rem 2rem;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            border-top: 1px solid var(--border);
+        }
+        footer a { color: var(--accent); text-decoration: none; }
+
+        /* Scroll reveal */
+        .reveal {
+            opacity: 0;
+            transform: translateY(40px);
+            transition: all 0.8s ease;
+        }
+        .reveal.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .usecase { flex-direction: column; }
+            section { padding: 4rem 1.5rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="grid-bg"></div>
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+
+    <div class="content">
+        <!-- Hero -->
+        <section class="hero">
+            <div class="terminal-badge">claude code --version 2026</div>
+            <h1>
+                <span class="gradient">Claude Code</span><br>
+                מערכת ההפעלה שלי
+            </h1>
+            <p>איך הפסקתי לעבוד מול ממשקי Web והתחלתי לדבר ישירות עם הפלטפורמות שלי</p>
+            <div class="scroll-indicator">↓</div>
+        </section>
+
+        <!-- Philosophy -->
+        <section class="reveal">
+            <div class="section-label">// הפילוסופיה</div>
+            <div class="section-title">הסוד? <span style="color: var(--accent)">קונטקסט</span></div>
+            <p class="section-desc">
+                כשמדובר על סוכני LLM, אם אתה עוטף אותו בידע הנכון — הוא חברך הטוב. היוזקייסים מגיעים לבד.
+            </p>
+            <div class="philosophy-grid">
+                <div class="phil-card">
+                    <div class="icon">🧠</div>
+                    <h3>ידע = כוח</h3>
+                    <p>ככל שקלוד יודע יותר על מה שקורה סביבך — ככה הוא שימושי יותר. CLAUDE.md, Memory, Skills — הכל בונה את הקונטקסט.</p>
+                </div>
+                <div class="phil-card">
+                    <div class="icon">🔗</div>
+                    <h3>חיבורים נכונים</h3>
+                    <p>SSH, WP-CLI, Google Sheets API, FTP, DB ישיר — אתה לא עובד יותר מול ממשקים. אתה מדבר אל הפלטפורמות.</p>
+                </div>
+                <div class="phil-card">
+                    <div class="icon">🎯</div>
+                    <h3>תרחישים אמיתיים</h3>
+                    <p>לא "מה AI יכול לעשות בתיאוריה" — אלא "איפה אני יכול להיעזר בו בתכל'ס, עכשיו, ביום יום".</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Terminal Demo -->
+        <section class="reveal">
+            <div class="section-label">// בפעולה</div>
+            <div class="section-title">שיחה, לא ממשק</div>
+            <p class="section-desc">במקום לפתוח דפדפן, לנווט, ללחוץ, למלא טפסים — פשוט אומר מה אני צריך.</p>
+
+            <div class="terminal">
+                <div class="terminal-header">
+                    <div class="terminal-dot red"></div>
+                    <div class="terminal-dot yellow"></div>
+                    <div class="terminal-dot green"></div>
+                    <span class="terminal-title">claude-code — zsh</span>
+                </div>
+                <div class="terminal-body">
+                    <div class="typing-line"><span class="prompt">aviz $</span> <span class="command">claude</span></div>
+                    <div class="typing-line"><span class="highlight">></span> <span class="command">שלח לגיא בוואטסאפ שהסדנה ביום חמישי בבוקר</span></div>
+                    <div class="typing-line"><span class="success">✓ Message sent to +972-52-839-1583</span></div>
+                    <div class="typing-line"><br></div>
+                    <div class="typing-line"><span class="highlight">></span> <span class="command">תבדוק מה קרה עם המחשב — היה מסך כחול לפני 10 דקות</span></div>
+                    <div class="typing-line"><span class="output">Checking system logs... Found WHEA_UNCORRECTABLE_ERROR</span></div>
+                    <div class="typing-line"><span class="output">Root cause: Driver timeout in nvlddmkm.sys</span></div>
+                    <div class="typing-line"><span class="success">✓ Recommendation: Update NVIDIA driver to v560.81</span></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Connections -->
+        <section class="reveal">
+            <div class="section-label">// החיבורים</div>
+            <div class="section-title">מערכת אקולוגית שלמה</div>
+            <p class="section-desc">כל פלטפורמה מחוברת. כל כלי נגיש. הכל דרך שיחה אחת.</p>
+
+            <div class="connections">
+                <div class="connection-node"><span class="dot"></span> WordPress (WP-CLI)</div>
+                <div class="connection-node"><span class="dot"></span> Google Sheets</div>
+                <div class="connection-node"><span class="dot"></span> Gmail</div>
+                <div class="connection-node"><span class="dot"></span> Google Calendar</div>
+                <div class="connection-node"><span class="dot"></span> WhatsApp</div>
+                <div class="connection-node"><span class="dot"></span> Telegram</div>
+                <div class="connection-node"><span class="dot"></span> SSH / Servers</div>
+                <div class="connection-node"><span class="dot"></span> GitHub</div>
+                <div class="connection-node"><span class="dot"></span> Chrome Browser</div>
+                <div class="connection-node"><span class="dot"></span> Database (SQL)</div>
+                <div class="connection-node"><span class="dot"></span> Facebook</div>
+                <div class="connection-node"><span class="dot"></span> LinkedIn</div>
+                <div class="connection-node"><span class="dot"></span> YouTube</div>
+                <div class="connection-node"><span class="dot"></span> ElevenLabs TTS</div>
+                <div class="connection-node"><span class="dot"></span> SVG + Sharp</div>
+                <div class="connection-node"><span class="dot"></span> Excel / CSV</div>
+                <div class="connection-node"><span class="dot"></span> FFmpeg Video</div>
+                <div class="connection-node"><span class="dot"></span> Image Generation</div>
+            </div>
+        </section>
+
+        <!-- Use Cases -->
+        <section class="reveal">
+            <div class="section-label">// יוזקייסים</div>
+            <div class="section-title">מה עושים עם זה <span style="color: var(--accent2)">בתכל'ס</span></div>
+
+            <div class="usecase-list">
+                <div class="usecase">
+                    <div class="usecase-icon">🌐</div>
+                    <div>
+                        <h3>ניהול אתר WordPress בדיבור</h3>
+                        <p>WP-CLI + FTP + חיבור ישיר ל-DB + כל הפלאגינים. "תעדכן את הפוסט האחרון", "תתקן את הטופס בעמוד צור קשר" — בלי לפתוח דפדפן.</p>
+                    </div>
+                </div>
+                <div class="usecase">
+                    <div class="usecase-icon">📊</div>
+                    <div>
+                        <h3>עבודה מול גליונות Google ואקסלים</h3>
+                        <p>Service Account מחובר לכל הגליונות. "תמשוך את הנתונים מגליון X, תעשה ניתוח, ותעדכן את גליון Y". מימשוק אוטומטי בין הכל.</p>
+                    </div>
+                </div>
+                <div class="usecase">
+                    <div class="usecase-icon">🔍</div>
+                    <div>
+                        <h3>בדיקות QA בדפדפן + הקלטה</h3>
+                        <p>אוטומציית דפדפן שרצה בדיקות, מקליטה GIF של התהליך, ומדווחת על באגים. צוואר הבקבוק של כל פיתוח — נפתר.</p>
+                    </div>
+                </div>
+                <div class="usecase">
+                    <div class="usecase-icon">🎨</div>
+                    <div>
+                        <h3>יצירת תמונות SVG + Sharp</h3>
+                        <p>"תצור לי אייקון ל..." — והוא מייצר וקטור מושלם. בשילוב עם Image Generators — אדיר.</p>
+                    </div>
+                </div>
+                <div class="usecase">
+                    <div class="usecase-icon">💬</div>
+                    <div>
+                        <h3>ניהול תקשורת אוטונומי</h3>
+                        <p>"תנהל מול גיא תקשורת, תקליט לו הודעה, תבדוק מה הגיב, תנהל כמה איטרציות" — בוט שמדבר בשמך (ויכול גם לפתיע).</p>
+                    </div>
+                </div>
+                <div class="usecase">
+                    <div class="usecase-icon">🖥️</div>
+                    <div>
+                        <h3>דיאגנוסטיקת מחשב</h3>
+                        <p>מסך כחול? "המחשב קרס לפני 10 דקות" — קלוד בודק לוגים, מוצא את הבעיה, ומציע פתרון. IT Support אישי.</p>
+                    </div>
+                </div>
+                <div class="usecase">
+                    <div class="usecase-icon">📱</div>
+                    <div>
+                        <h3>פרסום רב-ערוצי בפקודה אחת</h3>
+                        <p>Facebook, LinkedIn, Twitter, WordPress, Telegram — "תפרסם את זה בכל הערוצים". בום. נגמר.</p>
+                    </div>
+                </div>
+                <div class="usecase">
+                    <div class="usecase-icon">🧹</div>
+                    <div>
+                        <h3>ניקוי 35GB מהמחשב</h3>
+                        <p>"תפנה לי מקום" — סורק, מזהה קבצים כפולים, זמניים, ומיותרים. 35 גיגה חופשיים בשיחה אחת.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Stats -->
+        <section class="reveal">
+            <div class="stats-grid">
+                <div class="stat">
+                    <div class="stat-number">82+</div>
+                    <div class="stat-label">סקילים (Skills) פעילים</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-number">18</div>
+                    <div class="stat-label">פלטפורמות מחוברות</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-number">0</div>
+                    <div class="stat-label">ממשקי Web שצריך לפתוח</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-number">∞</div>
+                    <div class="stat-label">יוזקייסים חדשים כל יום</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Quote -->
+        <section class="reveal">
+            <div class="quote-block">
+                <div class="quote-text">הסוד תמיד היה ונשאר — קונטקסט.<br>
+                כשמדובר על סוכני LLM, אם אתה עוטף אותו בידע הנכון, הוא חברך הטוב.</div>
+                <div class="quote-author">— אביץ, מתוך שיחה על Claude Code כמערכת הפעלה</div>
+            </div>
+        </section>
+
+        <!-- The Ladder -->
+        <section class="reveal">
+            <div class="section-label">// הסולם</div>
+            <div class="section-title">מ<span style="color: var(--accent3)">מבצע</span> ל<span style="color: var(--accent)">אסטרטג</span></div>
+            <p class="section-desc">כל אוטומציה מעלה אותך שלב. הממשקים נעלמים. אתה חושב ברמה גבוהה יותר.</p>
+
+            <div class="philosophy-grid">
+                <div class="phil-card">
+                    <div class="icon">⌨️</div>
+                    <h3>שלב 1: מבצע</h3>
+                    <p>עושה הכל ידנית. נכנס לכל אתר, כותב כל מייל, מפרסם כל פוסט.</p>
+                </div>
+                <div class="phil-card">
+                    <div class="icon">🎮</div>
+                    <h3>שלב 2: מנהל</h3>
+                    <p>מדבר עם קלוד. "תשלח מייל ללקוח", "תפרסם פוסט", "תבדוק את הלוגים". מאציל ביצוע.</p>
+                </div>
+                <div class="phil-card">
+                    <div class="icon">🚀</div>
+                    <h3>שלב 3: אסטרטג</h3>
+                    <p>מגדיר מערכות ותהליכים. Skills, Hooks, Agents רצים ברקע. מתפנה לחשיבה.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Workshop CTA -->
+        <section class="cta-section reveal">
+            <div class="section-label">// סדנה</div>
+            <h2>רוצה לראות את זה בפעולה?</h2>
+            <p>סדנת "Claude Code כמערכת הפעלה" — לא צריך להיות מתכנת</p>
+            <a href="https://linktr.ee/aviz85" class="cta-btn" target="_blank">
+                לפרטים נוספים ←
+            </a>
+        </section>
+
+        <footer>
+            <p>נבנה ב-<span style="color: var(--accent)">Claude Code</span> — כי גם את האתר הזה בניתי בשיחה אחת 🤷‍♂️</p>
+            <p style="margin-top: 0.5rem"><a href="https://linktr.ee/aviz85">AVIZ</a> — הארכיטקט</p>
+        </footer>
+    </div>
+
+    <script>
+        // Scroll reveal
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                }
+            });
+        }, { threshold: 0.1 });
+
+        document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+        // Parallax orbs
+        window.addEventListener('mousemove', (e) => {
+            const x = e.clientX / window.innerWidth;
+            const y = e.clientY / window.innerHeight;
+            document.querySelectorAll('.orb').forEach((orb, i) => {
+                const speed = (i + 1) * 20;
+                orb.style.transform = `translate(${x * speed}px, ${y * speed}px)`;
+            });
+        });
+    </script>
+</body>
+</html>
